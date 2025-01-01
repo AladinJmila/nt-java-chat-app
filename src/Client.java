@@ -10,24 +10,28 @@ public class Client {
 
     public static void main(String[] args) {
         try (Socket socket = new Socket(host, port)) {
-            var in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            var out = new PrintWriter(socket.getOutputStream(), true);
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
 
-            String message;
-            while ((message = in.readLine()) != null) {
-                System.out.println(message);
-            }
-
-            try (var input = new BufferedReader(new InputStreamReader(System.in))) {
-                while (true) {
-                    out.println(input.readLine());
+            new Thread(() -> {
+                try {
+                    String serverMessage;
+                    while ((serverMessage = in.readLine()) != null) {
+                        System.out.println("Server message: " + serverMessage);
+                    }
+                } catch (IOException e) {
+                    System.err.println(e);
                 }
-            } catch (IOException e) {
-                // TODO: handle exception
+            }).start();
+
+            String clientMessage;
+            while ((clientMessage = consoleReader.readLine()) != null) {
+                out.println(clientMessage);
             }
 
         } catch (IOException e) {
-            // TODO: handle exception
+            System.err.println(e);
         }
     }
 }

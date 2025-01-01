@@ -2,7 +2,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.io.Writer;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
@@ -17,8 +16,8 @@ public class Server {
             try (ServerSocket server = new ServerSocket(PORT)) {
                 System.out.println("Listening for connections on port " + PORT + "...");
                 while (true) {
-                    Socket connection = server.accept();
-                    Runnable task = new ClientHandler(connection);
+                    Socket clientSocket = server.accept();
+                    Runnable task = new ClientHandler(clientSocket);
                     pool.execute(task);
                 }
             } catch (UnknownHostException e) {
@@ -33,17 +32,17 @@ public class Server {
     }
 
     private static class ClientHandler implements Runnable {
-        private Socket client;
+        private Socket clientSocket;
 
-        ClientHandler(Socket client) {
-            this.client = client;
+        ClientHandler(Socket clientSocket) {
+            this.clientSocket = clientSocket;
         }
 
         @Override
         public void run() {
             try {
-                var out = new PrintWriter(client.getOutputStream(), true);
-                var in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+                PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
 
                 out.println("Hello from server");
 
