@@ -12,7 +12,7 @@ public class Server {
     public static final int PORT = 8888;
 
     public static void main(String[] args) throws Exception {
-        try (ExecutorService pool = Executors.newFixedThreadPool(50)) {
+        try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
             try (ServerSocket server = new ServerSocket(PORT)) {
                 System.out.println("Listening for connections on port " + PORT + "...");
                 while (true) {
