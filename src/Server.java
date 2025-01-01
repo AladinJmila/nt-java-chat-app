@@ -11,7 +11,7 @@ import java.util.concurrent.Executors;
 public class Server {
     public static final int PORT = 8888;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         try (ExecutorService pool = Executors.newFixedThreadPool(50)) {
             try (ServerSocket server = new ServerSocket(PORT)) {
                 System.out.println("Listening for connections on port " + PORT + "...");
@@ -32,6 +32,7 @@ public class Server {
     }
 
     private static class ClientHandler implements Runnable {
+        SoundNotification notification = new SoundNotification();
         private Socket clientSocket;
 
         ClientHandler(Socket clientSocket) {
@@ -46,9 +47,10 @@ public class Server {
 
                 out.println("Hello from server");
 
-                String message;
-                while ((message = in.readLine()) != null) {
-                    System.out.println(message);
+                String clientMessage;
+                while ((clientMessage = in.readLine()) != null) {
+                    System.out.println(clientMessage);
+                    notification.play();
                 }
             } catch (IOException e) {
                 System.err.println(e);
