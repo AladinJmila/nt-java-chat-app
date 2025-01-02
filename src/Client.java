@@ -1,12 +1,27 @@
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.util.Properties;
 
 public class Client {
-    private String host = "localhost";
-    private int port = 8888;
+    private static final int PORT = 7777;
+    private static final String HOST = "localhost";
+    private int port;
+    private String host;
+
+    public Client() {
+        this.port = PORT;
+        this.host = HOST;
+    }
+
+    public Client(int port, String host) {
+        this.port = (port != 0) ? port : PORT;
+        this.host = (host != null) ? host : HOST;
+    }
 
     public void init() {
         try (Socket socket = new Socket(host, port);
@@ -14,11 +29,12 @@ public class Client {
                 BufferedReader consoleReader = new BufferedReader(new InputStreamReader(System.in));
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
 
+            System.out.println("Connected to HOST: '" + socket.getInetAddress() + "' on PORT: " + socket.getPort());
             listenToIncomingMessages(in);
             handleClientInput(consoleReader, out);
 
         } catch (IOException e) {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
@@ -30,7 +46,7 @@ public class Client {
                     System.out.println(serverMessage);
                 }
             } catch (IOException e) {
-                System.err.println(e);
+                e.printStackTrace();
             }
         }).start();
     }
@@ -43,6 +59,18 @@ public class Client {
     }
 
     public static void main(String[] args) {
-        new Client().init();
+        Properties config = new Properties();
+        try (FileInputStream configFileStream = new FileInputStream("./config.properties")) {
+            config.load(configFileStream);
+            int port = Integer.parseInt(config.getProperty("PORT"));
+            String host = config.getProperty("HOST");
+            new Client(port, host).init();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.err.println("Proceeding with default PORT & HOST:");
+            new Client().init();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

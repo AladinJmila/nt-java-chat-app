@@ -1,25 +1,37 @@
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Server {
-    public final int PORT = 8888;
+    private static final int PORT = 7777;
+    private int port;
     private boolean running = true;
     private ServerSocket serverSocket;
     private CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
 
+    public Server() {
+        this.port = PORT;
+    }
+
+    public Server(int port) {
+        this.port = (port != 0) ? port : PORT;
+    }
+
     private void init() {
         try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
-            try (ServerSocket server = new ServerSocket(PORT)) {
+            try (ServerSocket server = new ServerSocket(port)) {
                 serverSocket = server;
-                System.out.println("Listening for connections on port " + PORT + "...");
+                System.out.println("Listening for connections on port " + port + "...");
                 while (running) {
                     Socket clientSocket = server.accept();
                     ClientHandler handler = new ClientHandler(clientSocket);
@@ -87,8 +99,18 @@ public class Server {
 
     }
 
-    public static void main(String[] args) throws Exception {
-        new Server().init();
+    public static void main(String[] args) {
+        Properties config = new Properties();
+        try (FileInputStream configFileStream = new FileInputStream("./config.properties")) {
+            config.load(configFileStream);
+            int port = Integer.parseInt(config.getProperty("PORT"));
+            new Server(port).init();
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            System.err.println("Proceeding with default PORT:");
+            new Server().init();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
-
 }
