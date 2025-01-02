@@ -54,13 +54,14 @@ public class Client {
             try {
                 socket.getOutputStream().write(0);
             } catch (SocketException e) {
-                System.err.println("Lost server connection!");
+                System.err.println("Lost server connection! Please try again later.");
                 try {
                     socket.close();
-                } catch (IOException e1) {
-                    e1.printStackTrace();
+                } catch (IOException err) {
+                    err.printStackTrace();
                 }
-                executorService.close();
+                System.err.println("Exiting application...");
+                System.exit(1);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -75,7 +76,7 @@ public class Client {
                     System.out.println(serverMessage);
                 }
             } catch (IOException e) {
-                e.printStackTrace();
+                System.err.println("Connection lost...");
             }
         }).start();
     }
