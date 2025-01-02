@@ -92,23 +92,10 @@ public class Server {
                 while ((!clientSocket.isClosed()) && ((clientMessage = in.readLine()) != null)) {
                     clientMessage = clientMessage.trim();
                     if (clientMessage.startsWith("/q")) {
-                        out.println("You're being diconnected...");
-                        broadcastToRoom(this, clientName + " left the chat.");
-                        clientSocket.close();
+                        handleQuit();
                         break;
                     } else if (clientMessage.startsWith("/r")) {
-                        try {
-                            int roomNumber = Integer.parseInt(clientMessage.split(" ")[1]);
-                            if (roomNumber == 0 || roomNumber == 1 || roomNumber == 2 || roomNumber == 3) {
-                                chatRoomId = roomNumber;
-                                out.println("You successfully changed rooms. Welcome to '" + chatRooms.get(chatRoomId)
-                                        + "'");
-                                broadcastToAll(this,
-                                        clientName + " joined '" + chatRooms.get(chatRoomId) + "' chatroom");
-                            }
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                        handleRoomChange(clientMessage);
                     } else {
                         broadcastToRoom(this, clientName + ": " + clientMessage);
                     }
@@ -135,6 +122,29 @@ public class Server {
             writer.println("   - 3 for '" + chatRooms.get(3) + "'");
             writer.println("To exit the chat, enter /q");
             writer.println();
+        }
+
+        private void handleQuit() throws IOException {
+            writer.println("You're being diconnected...");
+            broadcastToRoom(this, clientName + " left the chat.");
+            clientSocket.close();
+        }
+
+        private void handleRoomChange(String clientMessage) {
+            try {
+                int roomNumber = Integer.parseInt(clientMessage.split(" ")[1]);
+                if (roomNumber == 0 || roomNumber == 1 || roomNumber == 2 || roomNumber == 3) {
+                    chatRoomId = roomNumber;
+                    writer.println("You successfully changed rooms. Welcome to '" + chatRooms.get(chatRoomId)
+                            + "'");
+                    broadcastToAll(this,
+                            clientName + " joined '" + chatRooms.get(chatRoomId) + "' chatroom");
+                } else {
+                    writer.println("Incorrect option. You are still in '" + chatRooms.get(chatRoomId) + "'");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
 
     }
