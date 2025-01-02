@@ -5,6 +5,8 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -12,6 +14,7 @@ public class Server {
     public final int PORT = 8888;
     private boolean running = true;
     private ServerSocket serverSocket;
+    private CopyOnWriteArrayList<ClientHandler> handlers = new CopyOnWriteArrayList<>();
 
     private void init() {
         try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -20,8 +23,9 @@ public class Server {
                 System.out.println("Listening for connections on port " + PORT + "...");
                 while (running) {
                     Socket clientSocket = server.accept();
-                    Runnable task = new ClientHandler(clientSocket);
-                    pool.execute(task);
+                    ClientHandler handler = new ClientHandler(clientSocket);
+                    handlers.add(handler);
+                    pool.execute(handler);
                 }
             } catch (UnknownHostException e) {
                 System.out.println("Can't connect to host");
@@ -40,6 +44,7 @@ public class Server {
     private class ClientHandler implements Runnable {
         SoundNotification notification = new SoundNotification();
         private Socket clientSocket;
+        private String clientName = "Guest " + (handlers.size() + 1);
 
         ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -49,8 +54,8 @@ public class Server {
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);) {
-
-                out.println("Hello from server");
+                out.println("Hi " + clientName);
+                out.println("Welcome to the Main chatroom!");
 
                 String clientMessage;
                 while ((!clientSocket.isClosed()) && ((clientMessage = in.readLine()) != null)) {
@@ -59,7 +64,7 @@ public class Server {
                         clientSocket.close();
                         break;
                     }
-                    System.out.println(clientMessage);
+                    System.out.println(clientName + ": " + clientMessage);
                     notification.play();
                 }
             } catch (IOException e) {
