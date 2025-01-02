@@ -4,6 +4,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.net.ConnectException;
 import java.net.Socket;
 import java.util.Properties;
 
@@ -33,6 +34,9 @@ public class Client {
             listenToIncomingMessages(in);
             handleClientInput(consoleReader, out);
 
+        } catch (ConnectException e) {
+            System.err.println("Connection failed: Unable to connect to " + host + ":" + port);
+            System.err.println("Please ensure the server is running ont PORT: " + port + " and try again.");
         } catch (IOException e) {
             e.printStackTrace();
         }
