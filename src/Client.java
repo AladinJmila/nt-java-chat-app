@@ -6,7 +6,11 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.ConnectException;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Client {
     private static final int PORT = 7777;
@@ -31,6 +35,8 @@ public class Client {
                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);) {
 
             System.out.println("Connected to HOST: '" + socket.getInetAddress() + "' on PORT: " + socket.getPort());
+
+            monitorConnection(socket);
             listenToIncomingMessages(in);
             handleClientInput(consoleReader, out);
 
@@ -40,6 +46,25 @@ public class Client {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void monitorConnection(Socket socket) {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(() -> {
+            try {
+                socket.getOutputStream().write(0);
+            } catch (SocketException e) {
+                System.err.println("Lost server connection!");
+                try {
+                    socket.close();
+                } catch (IOException e1) {
+                    e1.printStackTrace();
+                }
+                executorService.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private void listenToIncomingMessages(BufferedReader in) {
