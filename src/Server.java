@@ -84,9 +84,8 @@ public class Server {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);) {
                 writer = out;
-                out.println("Hi " + clientName);
-                out.println("Welcome to the '" + chatRooms.get(chatRoomId) + "' chatroom!");
-                out.println("Currently there are " + clients.size() + " user(s) on the platform including you.");
+
+                renderWelcomeMenu();
                 broadcastToRoom(this, clientName + " joined the chat.");
 
                 String clientMessage;
@@ -98,12 +97,6 @@ public class Server {
                         clientSocket.close();
                         break;
                     } else if (clientMessage.startsWith("/r")) {
-                        out.println(
-                                "Chose a chatroom. Enter /id followed by: 0 for '" + chatRooms.get(0) + "' , 1 for '"
-                                        + chatRooms.get(1) + "' , 2 for '" + chatRooms.get(2) + "', and 3 for '"
-                                        + chatRooms.get(3)
-                                        + "'");
-                    } else if (clientMessage.startsWith("/id ")) {
                         try {
                             int roomNumber = Integer.parseInt(clientMessage.split(" ")[1]);
                             if (roomNumber == 0 || roomNumber == 1 || roomNumber == 2 || roomNumber == 3) {
@@ -128,6 +121,20 @@ public class Server {
         public void sendMessage(String message) {
             writer.println(message);
             notification.play();
+        }
+
+        private void renderWelcomeMenu() {
+            writer.println("Hi " + clientName);
+            writer.println("Welcome to the '" + chatRooms.get(chatRoomId) + "' chatroom!");
+            writer.println("Currently there are " + clients.size() + " user(s) on the platform including you.");
+            writer.println();
+            writer.println("To change the chatroom, enter /r followed by:");
+            writer.println("   - 0 for '" + chatRooms.get(0) + "'");
+            writer.println("   - 1 for '" + chatRooms.get(1) + "'");
+            writer.println("   - 2 for '" + chatRooms.get(2) + "'");
+            writer.println("   - 3 for '" + chatRooms.get(3) + "'");
+            writer.println("To exit the chat, enter /q");
+            writer.println();
         }
 
     }
