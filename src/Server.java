@@ -5,7 +5,6 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.ArrayList;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +13,7 @@ public class Server {
     public final int PORT = 8888;
     private boolean running = true;
     private ServerSocket serverSocket;
-    private CopyOnWriteArrayList<ClientHandler> handlers = new CopyOnWriteArrayList<>();
+    private CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
 
     private void init() {
         try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -24,7 +23,7 @@ public class Server {
                 while (running) {
                     Socket clientSocket = server.accept();
                     ClientHandler handler = new ClientHandler(clientSocket);
-                    handlers.add(handler);
+                    clients.add(handler);
                     pool.execute(handler);
                 }
             } catch (UnknownHostException e) {
@@ -41,10 +40,18 @@ public class Server {
         }
     }
 
+    private void broadcast(ClientHandler currentClient, String message) {
+        for (var client : clients) {
+            if (client != currentClient && message != null)
+                client.sendMessage(message);
+        }
+    }
+
     private class ClientHandler implements Runnable {
         SoundNotification notification = new SoundNotification();
+        PrintWriter writer;
         private Socket clientSocket;
-        private String clientName = "Guest " + (handlers.size() + 1);
+        private String clientName = "Guest " + (clients.size() + 1);
 
         ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -54,6 +61,7 @@ public class Server {
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);) {
+                writer = out;
                 out.println("Hi " + clientName);
                 out.println("Welcome to the Main chatroom!");
 
@@ -61,15 +69,20 @@ public class Server {
                 while ((!clientSocket.isClosed()) && ((clientMessage = in.readLine()) != null)) {
                     if (clientMessage.startsWith("/q")) {
                         out.println("You're being diconnected...");
+                        broadcast(this, clientName + " left the chat.");
                         clientSocket.close();
                         break;
                     }
-                    System.out.println(clientName + ": " + clientMessage);
+                    broadcast(this, clientName + ": " + clientMessage);
                     notification.play();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+
+        public void sendMessage(String message) {
+            writer.println(message);
         }
 
     }
