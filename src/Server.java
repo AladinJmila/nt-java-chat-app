@@ -7,6 +7,7 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
@@ -18,6 +19,7 @@ public class Server {
     private boolean running = true;
     private ServerSocket serverSocket;
     private CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    private Map<Integer, String> chatRooms = Map.of(0, "Main", 1, "Movies", 2, "Sports", 3, "Crafts");
 
     public Server() {
         this.port = PORT;
@@ -52,9 +54,16 @@ public class Server {
         }
     }
 
-    private void broadcast(ClientHandler currentClient, String message) {
+    private void broadcastToAll(ClientHandler currentClient, String message) {
         for (var client : clients) {
             if (client != currentClient && message != null)
+                client.sendMessage(message);
+        }
+    }
+
+    private void broadcastToRoom(ClientHandler currentClient, String message) {
+        for (var client : clients) {
+            if (client != currentClient && message != null && client.chatRoomId == currentClient.chatRoomId)
                 client.sendMessage(message);
         }
     }
@@ -64,6 +73,7 @@ public class Server {
         PrintWriter writer;
         private Socket clientSocket;
         private String clientName = "Guest " + (clients.size() + 1);
+        private int chatRoomId = 0;
 
         ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
@@ -75,18 +85,40 @@ public class Server {
                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);) {
                 writer = out;
                 out.println("Hi " + clientName);
-                out.println("Welcome to the Main chatroom!");
+                out.println("Welcome to the '" + chatRooms.get(chatRoomId) + "' chatroom!");
+                out.println("Currently there are " + clients.size() + " user(s) on the platform including you.");
+                broadcastToRoom(this, clientName + " joined the chat.");
 
                 String clientMessage;
                 while ((!clientSocket.isClosed()) && ((clientMessage = in.readLine()) != null)) {
+                    clientMessage = clientMessage.trim();
                     if (clientMessage.startsWith("/q")) {
                         out.println("You're being diconnected...");
-                        broadcast(this, clientName + " left the chat.");
+                        broadcastToRoom(this, clientName + " left the chat.");
                         clientSocket.close();
                         break;
+                    } else if (clientMessage.startsWith("/r")) {
+                        out.println(
+                                "Chose a chatroom. Enter /id followed by: 0 for '" + chatRooms.get(0) + "' , 1 for '"
+                                        + chatRooms.get(1) + "' , 2 for '" + chatRooms.get(2) + "', and 3 for '"
+                                        + chatRooms.get(3)
+                                        + "'");
+                    } else if (clientMessage.startsWith("/id ")) {
+                        try {
+                            int roomNumber = Integer.parseInt(clientMessage.split(" ")[1]);
+                            if (roomNumber == 0 || roomNumber == 1 || roomNumber == 2 || roomNumber == 3) {
+                                chatRoomId = roomNumber;
+                                out.println("You successfully changed rooms. Welcome to '" + chatRooms.get(chatRoomId)
+                                        + "'");
+                                broadcastToAll(this,
+                                        clientName + " joined '" + chatRooms.get(chatRoomId) + "' chatroom");
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    } else {
+                        broadcastToRoom(this, clientName + ": " + clientMessage);
                     }
-                    broadcast(this, clientName + ": " + clientMessage);
-                    notification.play();
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -95,6 +127,7 @@ public class Server {
 
         public void sendMessage(String message) {
             writer.println(message);
+            notification.play();
         }
 
     }
