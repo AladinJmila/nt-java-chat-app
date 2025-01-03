@@ -18,16 +18,20 @@ public class Client {
     private int port;
     private String host;
 
+    // Default constructor that initializes client with default host and port
     public Client() {
         this.port = PORT;
         this.host = HOST;
     }
 
+    // Constructor that allows custom host and port configuration with fallback to
+    // defaults
     public Client(int port, String host) {
         this.port = (port != 0) ? port : PORT;
         this.host = (host != null) ? host : HOST;
     }
 
+    // Initializes the client connection and sets up message handling
     public void init() {
         try (Socket socket = new Socket(host, port);
                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -48,6 +52,7 @@ public class Client {
         }
     }
 
+    // Monitors socket connection health by sending periodic heartbeat signals
     private void monitorConnection(Socket socket) {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(() -> {
@@ -68,6 +73,7 @@ public class Client {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
+    // Spawns a separate thread to continuously listen for incoming server messages
     private void listenToIncomingMessages(BufferedReader in) {
         new Thread(() -> {
             try {
@@ -80,6 +86,7 @@ public class Client {
         }).start();
     }
 
+    // Reads user input from console and sends it to the server
     private void handleClientInput(BufferedReader in, PrintWriter out) throws IOException {
         String clientMessage;
         while ((clientMessage = in.readLine()) != null) {
@@ -87,6 +94,7 @@ public class Client {
         }
     }
 
+    // Entry point that loads configuration and starts the client
     public static void main(String[] args) {
         Properties config = new Properties();
         try (FileInputStream configFileStream = new FileInputStream("./config.properties")) {
