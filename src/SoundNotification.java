@@ -5,7 +5,7 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.Clip;
 
 public class SoundNotification {
-    private static final String SOUND_FILE_PATH = "./static/message-notification.wav";
+    private static final String SOUND_FILE_PATH = "./message-notification.wav";
     private Clip clip;
 
     SoundNotification() {

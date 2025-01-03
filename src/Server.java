@@ -92,7 +92,7 @@ public class Server {
                 while ((!clientSocket.isClosed()) && ((clientMessage = in.readLine()) != null)) {
                     clientMessage = clientMessage.trim();
                     if (clientMessage.startsWith("/q")) {
-                        handleQuit();
+                        handleQuit(this);
                         break;
                     } else if (clientMessage.startsWith("/r")) {
                         handleRoomChange(clientMessage);
@@ -124,10 +124,11 @@ public class Server {
             writer.println();
         }
 
-        private void handleQuit() throws IOException {
+        private void handleQuit(ClientHandler currentClient) throws IOException {
             writer.println("You're being diconnected...");
             broadcastToRoom(this, clientName + " left the chat.");
             clientSocket.close();
+            clients.remove(currentClient);
         }
 
         private void handleRoomChange(String clientMessage) {
