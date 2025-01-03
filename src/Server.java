@@ -15,22 +15,28 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+// Multi-threaded chat server that manages client connections and chat rooms
 public class Server {
     private static final int PORT = 7777;
     private int port;
     private boolean running = true;
     private ServerSocket serverSocket;
+    // Thread-safe list to store all connected client handlers
     private CopyOnWriteArrayList<ClientHandler> clients = new CopyOnWriteArrayList<>();
+    // Predefined chat rooms available in the server
     private Map<Integer, String> chatRooms = Map.of(0, "Main", 1, "Movies", 2, "Sports", 3, "Crafts");
 
+    // Default constructor using predefined port
     public Server() {
         this.port = PORT;
     }
 
+    // Constructor allowing custom port configuration with fallback to default
     public Server(int port) {
         this.port = (port != 0) ? port : PORT;
     }
 
+    // Initializes the server and starts accepting client connections
     private void init() {
         monitorConnections();
         try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -57,6 +63,7 @@ public class Server {
         }
     }
 
+    // Broadcasts a message to all connected clients except the sender
     private void broadcastToAll(ClientHandler currentClient, String message) {
         for (var client : clients) {
             if (client != currentClient && message != null)
@@ -64,6 +71,7 @@ public class Server {
         }
     }
 
+    // Broadcasts a message only to clients in the same chat room as the sender
     private void broadcastToRoom(ClientHandler currentClient, String message) {
         for (var client : clients) {
             if (client != currentClient && message != null && client.chatRoomId == currentClient.chatRoomId)
@@ -71,6 +79,7 @@ public class Server {
         }
     }
 
+    // Periodically checks for and removes disconnected clients
     private void monitorConnections() {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
         executorService.scheduleAtFixedRate(() -> {
@@ -84,6 +93,7 @@ public class Server {
         }, 1, 1, TimeUnit.SECONDS);
     }
 
+    // Handles individual client connections and message processing
     private class ClientHandler implements Runnable {
         SoundNotification notification = new SoundNotification();
         PrintWriter writer;
@@ -91,10 +101,12 @@ public class Server {
         private String clientName = "Guest " + (clients.size() + 1);
         private int chatRoomId = 0;
 
+        // Initializes a new client handler with the client's socket
         ClientHandler(Socket clientSocket) {
             this.clientSocket = clientSocket;
         }
 
+        // Manages client connection lifecycle and message handling
         @Override
         public void run() {
             try (BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -121,11 +133,13 @@ public class Server {
             }
         }
 
+        // Sends a message to the client and plays a notification sound
         public void sendMessage(String message) {
             writer.println(message);
             notification.play();
         }
 
+        // Displays initial welcome message and available commands to the client
         private void renderWelcomeMenu() {
             writer.println("Hi " + clientName);
             writer.println("Welcome to the '" + chatRooms.get(chatRoomId) + "' chatroom!");
@@ -140,6 +154,7 @@ public class Server {
             writer.println();
         }
 
+        // Handles client disconnection and cleanup
         private void handleQuit(ClientHandler currentClient) throws IOException {
             writer.println("You're being diconnected...");
             broadcastToAll(this, clientName + " left the chat.");
@@ -148,6 +163,7 @@ public class Server {
             clients.remove(currentClient);
         }
 
+        // Processes chat room change requests from clients
         private void handleRoomChange(String clientMessage) {
             try {
                 String input = clientMessage.split(" ")[1];
@@ -182,6 +198,7 @@ public class Server {
         }
     }
 
+    // Entry point that loads configuration and starts the server
     public static void main(String[] args) {
         Properties config = new Properties();
         try (FileInputStream configFileStream = new FileInputStream("./config.properties")) {
