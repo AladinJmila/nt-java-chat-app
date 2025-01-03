@@ -12,6 +12,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
+// A TCP client implementation that enables real-time chat communication with a server
 public class Client {
     private static final int PORT = 7777;
     private static final String HOST = "localhost";
