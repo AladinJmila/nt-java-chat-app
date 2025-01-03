@@ -12,6 +12,8 @@ import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Server {
     private static final int PORT = 7777;
@@ -30,6 +32,7 @@ public class Server {
     }
 
     private void init() {
+        monitorConnections();
         try (ExecutorService pool = Executors.newVirtualThreadPerTaskExecutor()) {
             try (ServerSocket server = new ServerSocket(port)) {
                 serverSocket = server;
@@ -66,6 +69,19 @@ public class Server {
             if (client != currentClient && message != null && client.chatRoomId == currentClient.chatRoomId)
                 client.sendMessage(message);
         }
+    }
+
+    private void monitorConnections() {
+        ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
+        executorService.scheduleAtFixedRate(() -> {
+            for (var client : clients) {
+                if (client.getSocket().isClosed()) {
+                    broadcastToAll(client, client.getName() + " left the chat.");
+                    broadcastToAll(client, "Currently there are " + (clients.size() - 1) + " user(s) on the platform.");
+                    clients.remove(client);
+                }
+            }
+        }, 1, 1, TimeUnit.SECONDS);
     }
 
     private class ClientHandler implements Runnable {
@@ -126,7 +142,8 @@ public class Server {
 
         private void handleQuit(ClientHandler currentClient) throws IOException {
             writer.println("You're being diconnected...");
-            broadcastToRoom(this, clientName + " left the chat.");
+            broadcastToAll(this, clientName + " left the chat.");
+            broadcastToAll(this, "Currently there are " + clients.size() + " user(s) on the platform.");
             clientSocket.close();
             clients.remove(currentClient);
         }
@@ -148,6 +165,13 @@ public class Server {
             }
         }
 
+        public Socket getSocket() {
+            return this.clientSocket;
+        }
+
+        public String getName() {
+            return this.clientName;
+        }
     }
 
     public static void main(String[] args) {

@@ -54,7 +54,7 @@ public class Client {
             try {
                 socket.getOutputStream().write(0);
             } catch (SocketException e) {
-                System.err.println("Lost server connection! Please try again later.");
+                System.err.println("Lost connection! Please try again later.");
                 try {
                     socket.close();
                 } catch (IOException err) {
@@ -69,14 +69,13 @@ public class Client {
     }
 
     private void listenToIncomingMessages(BufferedReader in) {
-        Thread.startVirtualThread(() -> {
+        new Thread(() -> {
             try {
                 String serverMessage;
                 while ((serverMessage = in.readLine()) != null) {
                     System.out.println(serverMessage);
                 }
             } catch (IOException e) {
-                System.err.println("Connection lost...");
             }
         }).start();
     }
