@@ -17,12 +17,13 @@ public class SoundNotification {
             this.clip.open(audioStream);
         } catch (Exception e) {
             System.err.println(e);
+            clip = null;
         }
     }
 
     // Plays the notification sound from the beginning if the clip is available
     public void play() {
-        if (clip.isOpen()) {
+        if (clip != null) {
             clip.setFramePosition(0);
             clip.start();
         }
