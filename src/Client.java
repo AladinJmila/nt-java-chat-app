@@ -69,7 +69,7 @@ public class Client {
     }
 
     private void listenToIncomingMessages(BufferedReader in) {
-        new Thread(() -> {
+        Thread.startVirtualThread(() -> {
             try {
                 String serverMessage;
                 while ((serverMessage = in.readLine()) != null) {
