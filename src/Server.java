@@ -150,7 +150,14 @@ public class Server {
 
         private void handleRoomChange(String clientMessage) {
             try {
-                int roomNumber = Integer.parseInt(clientMessage.split(" ")[1]);
+                String input = clientMessage.split(" ")[1];
+                if (!input.matches("\\d+")) {
+                    writer.println("Please enter /r followed by a valid room number (numbers only)");
+                    return;
+                }
+
+                int roomNumber = Integer.parseInt(input);
+
                 if (roomNumber == 0 || roomNumber == 1 || roomNumber == 2 || roomNumber == 3) {
                     chatRoomId = roomNumber;
                     writer.println("You successfully changed rooms. Welcome to '" + chatRooms.get(chatRoomId)
@@ -159,6 +166,7 @@ public class Server {
                             clientName + " joined '" + chatRooms.get(chatRoomId) + "' chatroom");
                 } else {
                     writer.println("Incorrect option. You are still in '" + chatRooms.get(chatRoomId) + "'");
+                    return;
                 }
             } catch (Exception e) {
                 e.printStackTrace();
